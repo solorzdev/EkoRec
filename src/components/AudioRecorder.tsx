@@ -8,6 +8,7 @@ import {
   Text,
   Alert,
   ScrollView,
+  StyleSheet,
 } from 'react-native';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 import RNFS from 'react-native-fs';
@@ -38,13 +39,11 @@ const AudioRecorder = () => {
   const loadRecordings = async () => {
     try {
       const data = await fetchRecordings();
-      console.log('📄 Grabaciones cargadas:', data); // ⬅️ añade esto
       setRecordings(data);
     } catch (err) {
       console.error('Error al cargar grabaciones:', err);
     }
   };
-  
 
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
@@ -70,12 +69,11 @@ const AudioRecorder = () => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
-    const timestamp = new Date().getTime(); // número único por milisegundos
+    const timestamp = new Date().getTime();
     const path = Platform.select({
       ios: `${RNFS.DocumentDirectoryPath}/audio_record_${timestamp}.m4a`,
       android: `${RNFS.ExternalDirectoryPath}/audio_record_${timestamp}.mp4`,
     });
-
 
     try {
       const uri = await audioRecorderPlayer.startRecorder(path);
@@ -91,14 +89,12 @@ const AudioRecorder = () => {
       const uri = await audioRecorderPlayer.stopRecorder();
       setIsRecording(false);
       setRecordedURI(uri);
-  
+
       if (!uri) throw new Error('No se pudo obtener la URI de la grabación');
-  
+
       const name = `Grabación - ${new Date().toLocaleTimeString()}`;
       const date = new Date().toISOString();
-  
-      console.log('🚀 Detalle de grabación antes de guardar:', { uri, name, date });
-  
+
       const cleanedUri = uri.replace(/^file:\/*/, 'file:///');
       await insertRecording(cleanedUri, name, date);
       await loadRecordings();
@@ -106,7 +102,7 @@ const AudioRecorder = () => {
       console.error('❌ Error al guardar grabación:', error?.message ?? error);
       Alert.alert('Error', 'No se pudo guardar la grabación');
     }
-  };  
+  };
 
   const playRecording = async (uri: string) => {
     try {
@@ -142,7 +138,7 @@ const AudioRecorder = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Button
         title={isRecording ? 'DETENER GRABACIÓN' : 'INICIAR GRABACIÓN'}
         onPress={isRecording ? stopRecording : startRecording}
@@ -163,24 +159,18 @@ const AudioRecorder = () => {
           {recordings.map((rec) => (
             <View
               key={rec.id}
-              style={{
-                marginTop: 10,
-                padding: 10,
-                borderWidth: 1,
-                borderRadius: 8,
-                borderColor: '#ccc',
-              }}
+              style={styles.card}
             >
-              <Text numberOfLines={1} style={{ marginBottom: 5 }}>
-                {rec.name}
-              </Text>
-              <Text style={{ fontSize: 12, color: '#666' }}>
-                {new Date(rec.date).toLocaleString()}
-              </Text>
-
-              <Button title="Reproducir" onPress={() => playRecording(rec.uri)} color="#4CAF50" />
-              <View style={{ height: 5 }} />
-              <Button title="Eliminar" onPress={() => deleteRecording(rec.id, rec.uri)} color="#f44336" />
+              <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>{rec.name}</Text>
+              <Text style={{ fontSize: 12, color: '#888' }}>{new Date(rec.date).toLocaleString()}</Text>
+              <View style={{ flexDirection: 'row', marginTop: 10, gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Button title="▶ Reproducir" onPress={() => playRecording(rec.uri)} color="#4CAF50" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button title="🗑 Eliminar" onPress={() => deleteRecording(rec.id, rec.uri)} color="#f44336" />
+                </View>
+              </View>
             </View>
           ))}
         </>
@@ -188,5 +178,23 @@ const AudioRecorder = () => {
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: '#f0f4f8',
+    minHeight: '100%',
+  },
+  card: {
+    marginTop: 10,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+});
 
 export default AudioRecorder;
