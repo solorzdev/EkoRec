@@ -140,3 +140,5 @@ export const testConnection = () => {
     );
   });
 };
+
+export type Recording = { id: number; uri: string; name: string; date: string };
